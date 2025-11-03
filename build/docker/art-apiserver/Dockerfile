@@ -1,0 +1,79 @@
+# syntax=docker/dockerfile:1.7
+
+# 0) Build args (overridable in CI)
+ARG BUILDER_IMAGE=golang:1.25.0
+ARG RUNTIME_IMAGE=debian:bookworm
+ARG USER=noroot
+ARG UID=65532
+ARG GID=65532
+
+# 1) Builder stage
+FROM ${BUILDER_IMAGE} AS builder
+
+ARG OS
+ARG ARCH
+
+# Optional: install build-time tools (as needed)
+# RUN apt-get update && apt-get install -y --no-install-recommends upx && rm -rf /var/lib/apt/lists/*
+
+# Work directory
+WORKDIR /workspace
+
+# Install minimal tools required to download files securely
+# RUN apk add --no-cache curl ca-certificates
+
+# Download the static tini binary (example for amd64); use a different file for other architectures
+# Then make it executable so it can be used as PID 1 in the final image
+RUN curl -fsSL -o /usr/bin/tini https://github.com/krallin/tini/releases/download/v0.19.0/tini-static-amd64 \
+ && chmod +x /usr/bin/tini
+
+# Use Go modules cache - The most important cache optimization
+# Copy go.mod and go.sum first to leverage Docker layer cache
+COPY go.mod go.sum ./
+
+# Use cache mount to cache Go modules
+RUN --mount=type=cache,target=/go/pkg/mod \
+ --mount=type=cache,target=/root/.cache/go-build \
+ go mod download
+
+# Copy source code
+COPY . .
+
+# Go build parameters (enable CGO if your project needs static linking)
+ENV CGO_ENABLED=1 GOOS=${OS} GOARCH=${ARCH} GO111MODULE=on GOCACHE=/root/.cache/go-build GOMODCACHE=/go/pkg/mod
+
+# Build with cache mount for make build
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    make build BINS=art-apiserver
+
+# 2) Runtime stage
+FROM ${RUNTIME_IMAGE} AS runtime
+
+ARG OS
+ARG ARCH
+ARG USER
+ARG UID
+ARG GID
+
+# App directory
+WORKDIR /app
+# Install runtime essentials
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates tzdata wget curl telnet \
+ && rm -rf /var/lib/apt/lists/*
+
+# Security: create a non-root user (ignore errors if already exists)
+# Use || true to avoid build failures when the group/user already exists in base image
+RUN groupadd -g ${GID} ${USER} 2>/dev/null || true \
+ && useradd -u ${UID} -g ${USER} ${USER} 2>/dev/null || true
+
+# Copy artifacts and set ownership; numeric UID:GID is more robust
+COPY --from=builder --chown=0:0 /tmp/tini /usr/bin/tini
+COPY --from=builder --chown=${UID}:${GID} /workspace/_output/platforms/linux/amd64/art-apiserver /app/art-apiserver
+
+# Security: run as non-root
+USER ${UID}:${GID}
+
+# Use tini as minimal init to handle signals and reap zombies
+ENTRYPOINT ["/usr/bin/tini", "--", "/app/art-apiserver"]
