@@ -15,9 +15,9 @@ otel:
     output: stdout
 mysql:  
   addr: 127.0.0.1:3306
-  username: root
+  username: art
   password: "123456"
-  database: art_design_pro
+  database: art
   max-connection-life-time: 10s
   max-idle-connections: 100
   max-open-connections: 100
