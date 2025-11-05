@@ -56,10 +56,7 @@ var (
 
 func main() {
 	// 设置自定义的使用说明函数
-	pflag.Usage = func() {
-		fmt.Printf("%s", helpText)
-		pflag.PrintDefaults()
-	}
+	pflag.Usage = usage
 	pflag.Parse()
 
 	// 如果设置了帮助标志，则显示帮助信息并退出

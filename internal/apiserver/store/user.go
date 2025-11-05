@@ -4,9 +4,9 @@ package store
 import (
 	"context"
 
-	storelogger "github.com/onexstack/onexstack/pkg/logger/slog/store"
-	genericstore "github.com/onexstack/onexstack/pkg/store"
-	"github.com/onexstack/onexstack/pkg/store/where"
+	storelogger "github.com/moweilong/milady/pkg/log/logger/store"
+	genericstore "github.com/moweilong/milady/pkg/store"
+	"github.com/moweilong/milady/pkg/store/where"
 
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/model"
 )

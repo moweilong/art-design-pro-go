@@ -29,6 +29,10 @@ func (m *SecretM) BeforeCreate(tx *gorm.DB) (err error) {
 
 // BeforeCreate encrypts the plaintext password before creating a database record.
 func (m *UserM) BeforeCreate(tx *gorm.DB) error {
+	// 设置创建时间为当前时间
+	// TODO 为什么创建时间没有自动填充为当前时间
+	// m.CreatedAt = time.Now()
+
 	// Encrypt the user password.
 	var err error
 	m.Password, err = authn.Encrypt(m.Password)

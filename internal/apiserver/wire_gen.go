@@ -10,27 +10,39 @@ import (
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/biz"
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/pkg/validation"
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/store"
-	"github.com/onexstack/onexstack/pkg/authz"
+	"github.com/moweilong/art-design-pro-go/internal/pkg/auth"
+	"github.com/moweilong/milady/pkg/authz"
+	"github.com/moweilong/milady/pkg/options"
 )
 
 // Injectors from wire.go:
 
 // NewServer sets up and create the web server with all necessary dependencies.
-func NewServer(config *Config) (*Server, error) {
+func NewServer(config *Config, jwtOptions *options.JWTOptions, redisOptions *options.RedisOptions) (*Server, error) {
 	db, err := ProvideDB(config)
 	if err != nil {
 		return nil, err
 	}
 	datastore := store.NewStore(db)
+	authenticator, err := NewAuthenticator(jwtOptions, redisOptions)
+	if err != nil {
+		return nil, err
+	}
+	secretSetter := store.NewSecretSetter(datastore)
+	authnImpl, err := auth.NewAuthn(secretSetter)
+	if err != nil {
+		return nil, err
+	}
+	authAuth := auth.NewAuth(authnImpl)
+	bizBiz := biz.NewBiz(datastore, authenticator, authAuth)
+	validator := validation.New(datastore)
+	userRetriever := &UserRetriever{
+		store: datastore,
+	}
 	v := authz.DefaultOptions()
 	authzAuthz, err := authz.NewAuthz(db, v...)
 	if err != nil {
 		return nil, err
-	}
-	bizBiz := biz.NewBiz(datastore, authzAuthz)
-	validator := validation.New(datastore)
-	userRetriever := &UserRetriever{
-		store: datastore,
 	}
 	serverConfig := &ServerConfig{
 		Config:    config,

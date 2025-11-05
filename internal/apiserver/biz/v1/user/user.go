@@ -1,151 +1,123 @@
 package user
 
+//go:generate mockgen -destination mock_user.go -package user github.com/moweilong/art-design-pro-go/internal/apiserver/biz/v1/user UserBiz
+
 import (
 	"context"
-	"log/slog"
+	"errors"
+	"regexp"
 	"sync"
 
-	"github.com/jinzhu/copier"
-	"github.com/onexstack/onexstack/pkg/authn"
-	"github.com/onexstack/onexstack/pkg/authz"
-	"github.com/onexstack/onexstack/pkg/store/where"
-	"github.com/onexstack/onexstack/pkg/token"
+	"github.com/moweilong/milady/pkg/authn"
+	"github.com/moweilong/milady/pkg/core"
+	"github.com/moweilong/milady/pkg/log"
+	"github.com/moweilong/milady/pkg/store/where"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"gorm.io/gorm"
 
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/model"
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/pkg/conversion"
+	"github.com/moweilong/art-design-pro-go/internal/apiserver/pkg/validation"
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/store"
 	"github.com/moweilong/art-design-pro-go/internal/pkg/contextx"
-	"github.com/moweilong/art-design-pro-go/internal/pkg/errno"
 	"github.com/moweilong/art-design-pro-go/internal/pkg/known"
 	v1 "github.com/moweilong/art-design-pro-go/pkg/api/apiserver/v1"
 )
 
-// UserBiz 定义处理用户请求所需的方法.
+// UserBiz defines the interface that contains methods for handling user requests.
 type UserBiz interface {
+	// Create creates a new user based on the provided request parameters.
 	Create(ctx context.Context, rq *v1.CreateUserRequest) (*v1.CreateUserResponse, error)
+
+	// Update updates an existing user based on the provided request parameters.
 	Update(ctx context.Context, rq *v1.UpdateUserRequest) (*v1.UpdateUserResponse, error)
+
+	// Delete removes one or more users based on the provided request parameters.
 	Delete(ctx context.Context, rq *v1.DeleteUserRequest) (*v1.DeleteUserResponse, error)
+
+	// Get retrieves the details of a specific user based on the provided request parameters.
 	Get(ctx context.Context, rq *v1.GetUserRequest) (*v1.GetUserResponse, error)
+
+	// List retrieves a list of users and their total count based on the provided request parameters.
 	List(ctx context.Context, rq *v1.ListUserRequest) (*v1.ListUserResponse, error)
 
+	// UserExpansion defines additional methods for extended user operations, if needed.
 	UserExpansion
 }
 
-// UserExpansion 定义用户操作的扩展方法.
+// UserExpansion defines additional methods for user operations.
 type UserExpansion interface {
-	Login(ctx context.Context, rq *v1.LoginRequest) (*v1.LoginResponse, error)
-	RefreshToken(ctx context.Context, rq *v1.RefreshTokenRequest) (*v1.RefreshTokenResponse, error)
-	ChangePassword(ctx context.Context, rq *v1.ChangePasswordRequest) (*v1.ChangePasswordResponse, error)
+	// UpdatePassword updates the password for a user based on the provided request.
+	UpdatePassword(ctx context.Context, rq *v1.UpdatePasswordRequest) (*v1.UpdatePasswordResponse, error)
 	ListWithBadPerformance(ctx context.Context, rq *v1.ListUserRequest) (*v1.ListUserResponse, error)
 }
 
-// userBiz 是 UserBiz 接口的实现.
+// userBiz is the implementation of the UserBiz.
 type userBiz struct {
 	store store.IStore
-	authz *authz.Authz
 }
 
-// 确保 userBiz 实现了 UserBiz 接口.
+// Ensure that *userBiz implements the UserBiz.
 var _ UserBiz = (*userBiz)(nil)
 
-func New(store store.IStore, authz *authz.Authz) *userBiz {
-	return &userBiz{store: store, authz: authz}
+// New creates and returns a new instance of *userBiz.
+func New(store store.IStore) *userBiz {
+	return &userBiz{store: store}
 }
 
-// Login 实现 UserBiz 接口中的 Login 方法.
-func (b *userBiz) Login(ctx context.Context, rq *v1.LoginRequest) (*v1.LoginResponse, error) {
-	// 获取登录用户的所有信息
-	whr := where.F("username", rq.GetUsername())
-	userM, err := b.store.User().Get(ctx, whr)
-	if err != nil {
-		return nil, errno.ErrUserNotFound
-	}
-
-	// 对比传入的明文密码和数据库中已加密过的密码是否匹配
-	if err := authn.Compare(userM.Password, rq.GetPassword()); err != nil {
-		slog.ErrorContext(ctx, "Failed to compare password", "error", err)
-		return nil, errno.ErrPasswordInvalid
-	}
-
-	// 如果匹配成功，说明登录成功，签发 token 并返回
-	tokenStr, expireAt, err := token.Sign(userM.UserID)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to sign token", "error", err)
-		return nil, errno.ErrSignToken
-	}
-
-	return &v1.LoginResponse{Token: tokenStr, ExpireAt: timestamppb.New(expireAt)}, nil
-}
-
-// RefreshToken 用于刷新用户的身份验证令牌.
-// 当用户的令牌即将过期时，可以调用此方法生成一个新的令牌.
-func (b *userBiz) RefreshToken(ctx context.Context, rq *v1.RefreshTokenRequest) (*v1.RefreshTokenResponse, error) {
-	tokenStr, expireAt, err := token.Sign(contextx.UserID(ctx))
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to sign token", "error", err)
-		return nil, errno.ErrSignToken
-	}
-
-	return &v1.RefreshTokenResponse{Token: tokenStr, ExpireAt: timestamppb.New(expireAt)}, nil
-}
-
-// ChangePassword 实现 UserBiz 接口中的 ChangePassword 方法.
-func (b *userBiz) ChangePassword(ctx context.Context, rq *v1.ChangePasswordRequest) (*v1.ChangePasswordResponse, error) {
-	userM, err := b.store.User().Get(ctx, where.T(ctx))
-	if err != nil {
-		return nil, err
-	}
-
-	if err := authn.Compare(userM.Password, rq.GetOldPassword()); err != nil {
-		slog.ErrorContext(ctx, "Failed to compare password", "error", err)
-		return nil, errno.ErrPasswordInvalid
-	}
-
-	userM.Password, _ = authn.Encrypt(rq.GetNewPassword())
-	if err := b.store.User().Update(ctx, userM); err != nil {
-		return nil, err
-	}
-
-	return &v1.ChangePasswordResponse{}, nil
-}
-
-// Create 实现 UserBiz 接口中的 Create 方法.
+// Create implements the Create method of the UserBiz.
 func (b *userBiz) Create(ctx context.Context, rq *v1.CreateUserRequest) (*v1.CreateUserResponse, error) {
 	var userM model.UserM
-	_ = copier.Copy(&userM, rq)
+	_ = core.Copy(&userM, rq) // Copy request data to the User model.
 
-	if err := b.store.User().Create(ctx, &userM); err != nil {
-		return nil, err
-	}
+	// Start a transaction for creating the user and secret.
+	err := b.store.TX(ctx, func(ctx context.Context) error {
+		// Attempt to create the user in the data store.
+		if err := b.store.User().Create(ctx, &userM); err != nil {
+			// Handle duplicate entry error for username.
+			match, _ := regexp.MatchString("Duplicate entry '.*' for key 'username'", err.Error())
+			if match {
+				return v1.ErrorUserAlreadyExists("user %q already exists", userM.Username)
+			}
+			return v1.ErrorUserCreateFailed("create user failed: %s", err.Error())
+		}
 
-	if _, err := b.authz.AddGroupingPolicy(userM.UserID, known.RoleUser); err != nil {
-		slog.ErrorContext(ctx, "Failed to add grouping policy for user", "user", userM.UserID, "role", known.RoleUser, "error", err)
-		return nil, errno.ErrAddRole.WithMessage("%s", err.Error())
+		// Create a secret for the newly created user.
+		secretM := &model.SecretM{
+			UserID:      userM.UserID,
+			Name:        "generated",
+			Expires:     0,
+			Description: "automatically generated when user is created",
+		}
+		if err := b.store.Secret().Create(ctx, secretM); err != nil {
+			return v1.ErrorSecretCreateFailed("create secret failed: %s", err.Error())
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err // Return any error from the transaction.
 	}
 
 	return &v1.CreateUserResponse{UserID: userM.UserID}, nil
 }
 
-// Update 实现 UserBiz 接口中的 Update 方法.
+// Update implements the Update method of the UserBiz.
 func (b *userBiz) Update(ctx context.Context, rq *v1.UpdateUserRequest) (*v1.UpdateUserResponse, error) {
 	userM, err := b.store.User().Get(ctx, where.T(ctx))
 	if err != nil {
 		return nil, err
 	}
 
-	if rq.Username != nil {
-		userM.Username = rq.GetUsername()
+	// Update fields if provided in the request.
+	if rq.Nickname != nil {
+		userM.Nickname = *rq.Nickname
 	}
 	if rq.Email != nil {
-		userM.Email = rq.GetEmail()
-	}
-	if rq.Nickname != nil {
-		userM.Nickname = rq.GetNickname()
+		userM.Email = *rq.Email
 	}
 	if rq.Phone != nil {
-		userM.Phone = rq.GetPhone()
+		userM.Phone = *rq.Phone
 	}
 
 	if err := b.store.User().Update(ctx, userM); err != nil {
@@ -155,39 +127,43 @@ func (b *userBiz) Update(ctx context.Context, rq *v1.UpdateUserRequest) (*v1.Upd
 	return &v1.UpdateUserResponse{}, nil
 }
 
-// Delete 实现 UserBiz 接口中的 Delete 方法.
+// Delete implements the Delete method of the UserBiz.
 func (b *userBiz) Delete(ctx context.Context, rq *v1.DeleteUserRequest) (*v1.DeleteUserResponse, error) {
-	// 只有 `root` 用户可以删除用户，并且可以删除其他用户
-	// 所以这里不用 where.T()，因为 where.T() 会查询 `root` 用户自己
-	if err := b.store.User().Delete(ctx, where.F("userID", rq.GetUserID())); err != nil {
-		return nil, err
+	userID := contextx.UserID(ctx)
+	// Limit access to authorized users only.
+	if validation.IsAdminUser(contextx.UserID(ctx)) {
+		userID = rq.UserID
 	}
 
-	if _, err := b.authz.RemoveGroupingPolicy(rq.GetUserID(), known.RoleUser); err != nil {
-		slog.ErrorContext(ctx, "Failed to remove grouping policy for user", "user", rq.GetUserID(), "role", known.RoleUser, "error", err)
-		return nil, errno.ErrRemoveRole.WithMessage("%s", err.Error())
+	if err := b.store.User().Delete(ctx, where.F("userID", userID)); err != nil {
+		return nil, err
 	}
 
 	return &v1.DeleteUserResponse{}, nil
 }
 
-// Get 实现 UserBiz 接口中的 Get 方法.
+// Get implements the Get method of the UserBiz.
 func (b *userBiz) Get(ctx context.Context, rq *v1.GetUserRequest) (*v1.GetUserResponse, error) {
-	userM, err := b.store.User().Get(ctx, where.T(ctx))
-	if err != nil {
-		return nil, err
+	userID := contextx.UserID(ctx)
+	// Limit access to authorized users only.
+	if validation.IsAdminUser(contextx.UserID(ctx)) {
+		userID = rq.UserID
 	}
 
-	return &v1.GetUserResponse{User: conversion.UserModelToUserV1(userM)}, nil
+	userM, err := b.store.User().Get(ctx, where.F("userID", userID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, v1.ErrorUserNotFound(err.Error()) // Return an error if the user is not found.
+		}
+		return nil, err // Return any other error encountered.
+	}
+
+	return &v1.GetUserResponse{User: conversion.UserMToUserV1(userM)}, nil
 }
 
-// List 实现 UserBiz 接口中的 List 方法.
+// List implements the List method of the UserBiz.
 func (b *userBiz) List(ctx context.Context, rq *v1.ListUserRequest) (*v1.ListUserResponse, error) {
 	whr := where.P(int(rq.GetOffset()), int(rq.GetLimit()))
-	if contextx.Username(ctx) != known.AdminUsername {
-		whr.T(ctx)
-	}
-
 	count, userList, err := b.store.User().List(ctx, whr)
 	if err != nil {
 		return nil, err
@@ -196,27 +172,27 @@ func (b *userBiz) List(ctx context.Context, rq *v1.ListUserRequest) (*v1.ListUse
 	var m sync.Map
 	eg, ctx := errgroup.WithContext(ctx)
 
-	// 设置最大并发数量为常量 MaxConcurrency
+	// Set the maximum concurrency limit using the constant MaxConcurrency
 	eg.SetLimit(known.MaxErrGroupConcurrency)
 
-	// 使用 goroutine 提高接口性能
+	// Use goroutines to improve API performance
 	for _, user := range userList {
 		eg.Go(func() error {
 			select {
 			case <-ctx.Done():
 				return nil
 			default:
-				// 这里可以加入耗时的逻辑
-				/*
-					count, _, err := b.store.Posts().List(ctx, where.T(ctx))
-					if err != nil {
-						return err
-					}
-				*/
+				converted := conversion.UserMToUserV1(user)
 
-				userv1 := conversion.UserModelToUserV1(user)
-				//userv1.PostCount = count
-				m.Store(user.ID, userv1)
+				// Retrieve the count of secrets for each user.
+				count, _, err := b.store.Secret().List(ctx, where.F("userID", user.UserID))
+				if err != nil {
+					log.W(ctx).Errorw(err, "Failed to list secrets")
+					return err // Return any error encountered.
+				}
+				converted.Secrets = count
+
+				m.Store(user.ID, converted)
 
 				return nil
 			}
@@ -224,7 +200,7 @@ func (b *userBiz) List(ctx context.Context, rq *v1.ListUserRequest) (*v1.ListUse
 	}
 
 	if err := eg.Wait(); err != nil {
-		slog.ErrorContext(ctx, "Failed to wait all function calls returned", "error", err)
+		log.W(ctx).Errorw(err, "Failed to wait all function calls returned")
 		return nil, err
 	}
 
@@ -234,38 +210,52 @@ func (b *userBiz) List(ctx context.Context, rq *v1.ListUserRequest) (*v1.ListUse
 		users = append(users, user.(*v1.User))
 	}
 
-	slog.InfoContext(ctx, "Get users from backend storage", "count", len(users))
-
-	return &v1.ListUserResponse{TotalCount: count, Users: users}, nil
+	return &v1.ListUserResponse{Total: count, Users: users}, nil
 }
 
-// ListWithBadPerformance 是性能较差的实现方式（已废弃）.
-func (b *userBiz) ListWithBadPerformance(ctx context.Context, rq *v1.ListUserRequest) (*v1.ListUserResponse, error) {
-	whr := where.P(int(rq.GetOffset()), int(rq.GetLimit()))
-	if contextx.Username(ctx) != known.AdminUsername {
-		whr.T(ctx)
+// UpdatePassword updates the password for a user based on the provided request.
+func (b *userBiz) UpdatePassword(ctx context.Context, rq *v1.UpdatePasswordRequest) (*v1.UpdatePasswordResponse, error) {
+	// Retrieve the user by username.
+	userM, err := b.store.User().Get(ctx, where.T(ctx))
+	if err != nil {
+		return nil, err // Return any error encountered.
 	}
 
-	count, userList, err := b.store.User().List(ctx, whr)
+	// Compare the old password with the stored password.
+	if err := authn.Compare(userM.Password, rq.OldPassword); err != nil {
+		return nil, v1.ErrorUserLoginFailed("password incorrect") // Return an error if the old password is incorrect.
+	}
+	// Encrypt the new password.
+	userM.Password, _ = authn.Encrypt(rq.NewPassword)
+
+	return &v1.UpdatePasswordResponse{}, b.store.User().Update(ctx, userM) // Update the user's password in the data store.
+}
+
+// ListWithBadPerformance is a poor performance implementation of List.
+func (b *userBiz) ListWithBadPerformance(ctx context.Context, rq *v1.ListUserRequest) (*v1.ListUserResponse, error) {
+	// Retrieve the total count and list of users from the data store.
+	count, userList, err := b.store.User().List(ctx, where.P(int(rq.Offset), int(rq.Limit)))
 	if err != nil {
-		return nil, err
+		log.W(ctx).Errorw(err, "Failed to list users from storage")
+		return nil, err // Return any error encountered.
 	}
 
 	users := make([]*v1.User, 0, len(userList))
 	for _, user := range userList {
-		/*
-			count, _, err := b.store.Posts().List(ctx, where.T(ctx))
-			if err != nil {
-				return nil, err
-			}
-		*/
+		converted := conversion.UserMToUserV1(user)
 
-		userv1 := conversion.UserModelToUserV1(user)
-		//userv1.PostCount = count
-		users = append(users, userv1)
+		// Retrieve the count of secrets for each user.
+		count, _, err := b.store.Secret().List(ctx, where.F("userID", user.UserID))
+		if err != nil {
+			log.W(ctx).Errorw(err, "Failed to list secrets")
+			return nil, err // Return any error encountered.
+		}
+		converted.Password = "******"    // Mask the password in the reply.
+		converted.Secrets = count        // Set the secret count for the user.
+		users = append(users, converted) // Append the user to the final response list.
 	}
 
-	slog.InfoContext(ctx, "Get users from backend storage", "count", len(users))
+	log.W(ctx).Debugw("Get users from backend storage", "count", len(users))
 
-	return &v1.ListUserResponse{TotalCount: count, Users: users}, nil
+	return &v1.ListUserResponse{Total: count, Users: users}, nil // Return the response with all retrieved users.
 }

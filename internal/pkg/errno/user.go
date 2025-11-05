@@ -14,6 +14,13 @@ var (
 		Message: "Invalid username: Username must consist of letters, digits, and underscores only, and its length must be between 3 and 20 characters.",
 	}
 
+	// ErrNicknameInvalid indicates that the nickname is invalid.
+	ErrNicknameInvalid = &errorsx.ErrorX{
+		Code:    http.StatusBadRequest,
+		Reason:  "InvalidArgument.NicknameInvalid",
+		Message: "Invalid nickname: Nickname must consist of letters, digits, and underscores only, and its length must be between 3 and 30 characters.",
+	}
+
 	// ErrPasswordInvalid indicates that the password is invalid.
 	ErrPasswordInvalid = &errorsx.ErrorX{
 		Code:    http.StatusBadRequest,

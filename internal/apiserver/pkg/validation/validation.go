@@ -1,11 +1,13 @@
 package validation
 
 import (
-	"github.com/google/wire"
 	"regexp"
+
+	"github.com/google/wire"
 
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/store"
 	"github.com/moweilong/art-design-pro-go/internal/pkg/errno"
+	"github.com/moweilong/art-design-pro-go/internal/pkg/known"
 )
 
 // Validator is a struct that implements custom validation logic.
@@ -42,6 +44,22 @@ func isValidUsername(username string) bool {
 	}
 	// Validate character legality
 	if !validRegex.MatchString(username) {
+		return false
+	}
+	return true
+}
+
+// isValidNickname validates if a nickname is valid.
+func isValidNickname(nickname string) bool {
+	if len(nickname) >= 30 {
+		return false
+	}
+	// Validate length
+	if !lengthRegex.MatchString(nickname) {
+		return false
+	}
+	// Validate character legality
+	if !validRegex.MatchString(nickname) {
 		return false
 	}
 	return true
@@ -94,4 +112,8 @@ func isValidPhone(phone string) error {
 	}
 
 	return nil
+}
+
+func IsAdminUser(userID string) bool {
+	return userID == known.AdminUserID
 }

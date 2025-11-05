@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/google/wire"
-	"github.com/onexstack/onexstack/pkg/store/where"
+	"github.com/moweilong/milady/pkg/store/where"
 	"gorm.io/gorm"
 )
 
@@ -29,6 +29,7 @@ type IStore interface {
 	// TX is used to implement transactions in the Biz layer.
 	TX(ctx context.Context, fn func(ctx context.Context) error) error
 	User() UserStore
+	Secret() SecretStore
 }
 
 // transactionKey is the key used to store transaction context in context.Context.
@@ -91,4 +92,9 @@ func (store *datastore) TX(ctx context.Context, fn func(ctx context.Context) err
 // User 返回一个实现了 UserStore 接口的实例.
 func (store *datastore) User() UserStore {
 	return newUserStore(store)
+}
+
+// Secret 返回一个实现了 SecretStore 接口的实例.
+func (store *datastore) Secret() SecretStore {
+	return newSecretStore(store)
 }

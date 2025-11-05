@@ -24,7 +24,8 @@ const (
 // Define other constants.
 const (
 	// AdminUsername represents the username of the admin user.
-	AdminUsername = "root"
+	AdminUsername = "admin"
+	AdminUserID   = "user-admin"
 
 	// MaxErrGroupConcurrency defines the maximum number of concurrent tasks for errgroup.
 	// It is used to limit the number of simultaneous Goroutines executing within an errgroup,

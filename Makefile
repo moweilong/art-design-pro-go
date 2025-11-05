@@ -164,6 +164,7 @@ clean: ## Remove build artifacts and temp files (_output/).
 
 .PHONY: protoc
 protoc: ## Compile Protobuf files.
+	@echo "===========> protoc"
 	@echo "===========> Generate protobuf files"
 	@mkdir -p $(PROJ_ROOT_DIR)/api/openapi
 	@protoc                                              \
@@ -171,14 +172,20 @@ protoc: ## Compile Protobuf files.
 		--proto_path=$(PROJ_ROOT_DIR)/third_party/protobuf    \
 		--go_out=paths=source_relative:$(APIROOT)        \
 		--go-grpc_out=paths=source_relative:$(APIROOT)   \
+		--go-http_out=paths=source_relative:$(APIROOT) \
+		--go-errors_out=paths=source_relative:$(APIROOT) \
+		--go-errors-code_out=paths=source_relative:$(PROJ_ROOT_DIR)/docs/guide/zh-CN/api/errors-code \
+		--validate_out=paths=source_relative,lang=go:$(APIROOT) \
 		--openapiv2_out=$(PROJ_ROOT_DIR)/api/openapi \
 		--openapiv2_opt=allow_delete_body=true,logtostderr=true \
+		--openapiv2_opt=json_names_for_fields=false \
 		--defaults_out=paths=source_relative:$(APIROOT) \
 		$(shell find $(APIROOT)/* -name *.proto)
 	@find $(APIROOT)/* -name "*.pb.go" -exec protoc-go-inject-tag -input={} \;
 
 .PHONY: protoc.%
 protoc.%: ## Compile Protobuf files.
+	@echo "===========> protoc $*"
 	@echo "===========> Generate protobuf files"
 	@mkdir -p $(PROJ_ROOT_DIR)/api/openapi
 	@protoc                                              \
@@ -186,8 +193,13 @@ protoc.%: ## Compile Protobuf files.
 		--proto_path=$(PROJ_ROOT_DIR)/third_party/protobuf    \
 		--go_out=paths=source_relative:$(APIROOT)        \
 		--go-grpc_out=paths=source_relative:$(APIROOT)   \
+		--go-http_out=paths=source_relative:$(APIROOT) \
+		--go-errors_out=paths=source_relative:$(APIROOT) \
+		--go-errors-code_out=paths=source_relative:$(PROJ_ROOT_DIR)/docs/guide/zh-CN/api/errors-code \
+		--validate_out=paths=source_relative,lang=go:$(APIROOT) \
 		--openapiv2_out=$(PROJ_ROOT_DIR)/api/openapi \
 		--openapiv2_opt=allow_delete_body=true,logtostderr=true \
+		--openapiv2_opt=json_names_for_fields=false \
 		--defaults_out=paths=source_relative:$(APIROOT) \
 		$(shell find $(APIROOT)/$* -name *.proto)
 	@find $(APIROOT)/$* -name "*.pb.go" -exec protoc-go-inject-tag -input={} \;

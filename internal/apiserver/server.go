@@ -5,12 +5,15 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/onexstack/onexstack/pkg/authz"
-	genericoptions "github.com/onexstack/onexstack/pkg/options"
-	"github.com/onexstack/onexstack/pkg/server"
-	"github.com/onexstack/onexstack/pkg/store/registry"
-	"github.com/onexstack/onexstack/pkg/store/where"
-	"github.com/onexstack/onexstack/pkg/token"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/moweilong/milady/pkg/authn"
+	jwtauthn "github.com/moweilong/milady/pkg/authn/jwt"
+	jwtredis "github.com/moweilong/milady/pkg/authn/jwt/store/redis"
+	"github.com/moweilong/milady/pkg/authz"
+	genericoptions "github.com/moweilong/milady/pkg/options"
+	"github.com/moweilong/milady/pkg/server"
+	"github.com/moweilong/milady/pkg/store/registry"
+	"github.com/moweilong/milady/pkg/store/where"
 	"gorm.io/gorm"
 
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/biz"
@@ -18,7 +21,6 @@ import (
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/pkg/validation"
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/store"
 	"github.com/moweilong/art-design-pro-go/internal/pkg/contextx"
-	"github.com/moweilong/art-design-pro-go/internal/pkg/known"
 	mw "github.com/moweilong/art-design-pro-go/internal/pkg/middleware/gin"
 )
 
@@ -29,6 +31,8 @@ type Config struct {
 	TLSOptions   *genericoptions.TLSOptions
 	HTTPOptions  *genericoptions.HTTPOptions
 	MySQLOptions *genericoptions.MySQLOptions
+	JWTOptions   *genericoptions.JWTOptions
+	RedisOptions *genericoptions.RedisOptions
 }
 
 // Server represents the web server.
@@ -53,9 +57,9 @@ func (cfg *Config) NewServer(ctx context.Context) (*Server, error) {
 	})
 
 	// 初始化 token 包的签名密钥、认证 Key 及 Token 默认过期时间
-	token.Init(cfg.JWTKey, token.WithIdentityKey(known.XUserID), token.WithExpiration(cfg.Expiration))
+	// token.Init(cfg.JWTKey, token.WithIdentityKey(known.XUserID), token.WithExpiration(cfg.Expiration))
 	// Create the core server instance.
-	return NewServer(cfg)
+	return NewServer(cfg, cfg.JWTOptions, cfg.RedisOptions)
 }
 
 // Run starts the server and listens for termination signals.
@@ -79,7 +83,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 // NewDB creates and returns a *gorm.DB instance for MySQL.
 func (cfg *Config) NewDB() (*gorm.DB, error) {
-	slog.Info("Initializing database connection", "type", "mariadb")
+	slog.Info("Initializing database connection", "type", "mysql")
 	db, err := cfg.MySQLOptions.NewDB()
 	if err != nil {
 		slog.Error("Failed to create database connection", "error", err)
@@ -112,4 +116,56 @@ func ProvideDB(cfg *Config) (*gorm.DB, error) {
 
 func NewWebServer(serverConfig *ServerConfig) (server.Server, error) {
 	return serverConfig.NewGinServer()
+}
+
+// NewAuthenticator creates a new JWT-based Authenticator using the provided JWT and Redis options.
+func NewAuthenticator(jwtOpts *genericoptions.JWTOptions, redisOpts *genericoptions.RedisOptions) (authn.Authenticator, error) {
+	// Create a list of options for jwtauthn.
+	opts := []jwtauthn.Option{
+		// Specify the issuer of the token
+		jwtauthn.WithIssuer("art-design-pro-go"),
+		// Specify the default expiration time for the token to be issued
+		jwtauthn.WithExpired(jwtOpts.Expired),
+		// Specify the key to be used when issuing the token
+		jwtauthn.WithSigningKey([]byte(jwtOpts.Key)),
+		// WithKeyfunc will be used by the Parse methods as a callback function to supply
+		// the key for verification.  The function receives the parsed,
+		// but unverified Token.  This allows you to use properties in the
+		// Header of the token (such as `kid`) to identify which key to use.
+		jwtauthn.WithKeyfunc(func(t *jwt.Token) (any, error) {
+			// Verify that the signing method is HMAC.
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, jwtauthn.ErrTokenInvalid
+			}
+			// Return the signing key.
+			return []byte(jwtOpts.Key), nil
+		}),
+	}
+
+	// Set the signing method based on the provided option.
+	var method jwt.SigningMethod
+	switch jwtOpts.SigningMethod {
+	case "HS256":
+		method = jwt.SigningMethodHS256
+	case "HS384":
+		method = jwt.SigningMethodHS384
+	default:
+		method = jwt.SigningMethodHS512
+	}
+
+	opts = append(opts, jwtauthn.WithSigningMethod(method))
+
+	// Create a Redis store for jwtauthn.
+	store := jwtredis.NewStore(&jwtredis.Config{
+		Addr:      redisOpts.Addr,
+		Username:  redisOpts.Username,
+		Password:  redisOpts.Password,
+		Database:  redisOpts.Database,
+		KeyPrefix: "authn_",
+	})
+
+	// Create a new jwtauthn instance using the Redis store and options.
+	authn := jwtauthn.New(store, opts...)
+
+	return authn, nil
 }

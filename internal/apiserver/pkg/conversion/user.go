@@ -7,16 +7,18 @@ import (
 	v1 "github.com/moweilong/art-design-pro-go/pkg/api/apiserver/v1"
 )
 
-// UserModelToUserV1 将模型层的 UserM（用户模型对象）转换为 Protobuf 层的 User（v1 用户对象）.
-func UserModelToUserV1(userModel *model.UserM) *v1.User {
-	var protoUser v1.User
-	_ = core.CopyWithConverters(&protoUser, userModel)
-	return &protoUser
+// UserMToUserV1 converts a UserM object from the internal model
+// to a User object in the v1 API format.
+func UserMToUserV1(userModel *model.UserM) *v1.User {
+	var user v1.User
+	_ = core.CopyWithConverters(&user, userModel)
+	return &user
 }
 
-// UserV1ToUserModel 将 Protobuf 层的 User（v1 用户对象）转换为模型层的 UserM（用户模型对象）.
-func UserV1ToUserModel(protoUser *v1.User) *model.UserM {
+// UserV1ToUserM converts a User object from the v1 API format
+// to a UserM object in the internal model.
+func UserV1ToUserM(user *v1.User) *model.UserM {
 	var userModel model.UserM
-	_ = core.CopyWithConverters(&userModel, protoUser)
+	_ = core.CopyWithConverters(&userModel, user)
 	return &userModel
 }

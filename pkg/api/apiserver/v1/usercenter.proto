@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+package apiserver.v1;
+
+import "google/api/annotations.proto";
+import "apiserver/v1/secret.proto";
+import "apiserver/v1/user.proto";
+import "apiserver/v1/auth.proto";
+
+option go_package = "github.com/moweilong/art-design-pro-go/pkg/api/apiserver/v1;v1";
+
+// Peer lists  hubble peers and notifies of changes.
+service UserCenter{
+  // Login
+  rpc Login(LoginRequest) returns (LoginReply) {
+    option (google.api.http) = {
+      post: "/v1/auth/login",
+      body: "*",
+    };
+  }
+
+  // Logout
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/logout",
+      body: "*",
+    };
+  }
+
+  // RefreshToken
+  rpc RefreshToken(RefreshTokenRequest) returns (LoginReply) {
+    option (google.api.http) = {
+      post: "/v1/auth/refresh-token",
+      body: "*",
+    };
+  }
+
+  // Authenticate
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/authenticate",
+      body: "*",
+    };
+  }
+
+  // Authorize
+  rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/authorize",
+      body: "*",
+    };
+  }
+
+  // Auth
+  rpc Auth(AuthRequest) returns (AuthResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/auth",
+      body: "*",
+    };
+  }
+
+
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/users",
+      body: "*",
+    };
+  }
+
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
+    option (google.api.http) = {
+      put: "/v1/users/{userID}",
+      body: "*",
+    };
+  }
+
+  // DeleteUser
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {delete: "/v1/users/{userID}"};
+  }
+
+
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {get: "/v1/users/{userID}"};
+  }
+
+  // ListUser
+  rpc ListUser(ListUserRequest) returns (ListUserResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+  }
+
+  // UpdatePassword
+  rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse) {
+    option (google.api.http) = {
+      put: "/v1/users/{userID}/update-password",
+      body: "*",
+    };
+  }
+
+  // CreateSecret
+  rpc CreateSecret(CreateSecretRequest) returns (CreateSecretResponse) {
+    option (google.api.http) = {
+      post: "/v1/secrets",
+      body: "*",
+    };
+  }
+
+  // UpdateSecret
+  rpc UpdateSecret(UpdateSecretRequest) returns (UpdateSecretResponse) {
+    option (google.api.http) = {
+      put: "/v1/secrets/{name}",
+      body: "*",
+    };
+  }
+
+  // DeleteSecret
+  rpc DeleteSecret(DeleteSecretRequest) returns (DeleteSecretResponse) {
+    option (google.api.http) = {delete: "/v1/secrets/{name}"};
+  }
+
+  // GetSecret
+  rpc GetSecret(GetSecretRequest) returns (GetSecretResponse) {
+    option (google.api.http) = {get: "/v1/secrets/{name}"};
+  }
+
+
+  // ListSecret
+  rpc ListSecret(ListSecretRequest) returns (ListSecretResponse) {
+    option (google.api.http) = {get: "/v1/secrets"};
+  }
+}

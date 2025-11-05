@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/onexstack/onexstack/pkg/core"
-	"github.com/onexstack/onexstack/pkg/version"
+	"github.com/moweilong/milady/pkg/core"
+	"github.com/moweilong/milady/pkg/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	genericapiserver "k8s.io/apiserver/pkg/server"

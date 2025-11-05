@@ -36,8 +36,8 @@ func (v *Validator) ValidateUserRules() genericvalidation.Rules {
 			return nil
 		},
 		"Nickname": func(value any) error {
-			if len(value.(string)) >= 30 {
-				return errno.ErrInvalidArgument.WithMessage("nickname must be less than 30 characters")
+			if !isValidNickname(value.(string)) {
+				return errno.ErrNicknameInvalid
 			}
 			return nil
 		},
@@ -65,12 +65,12 @@ func (v *Validator) ValidateLoginRequest(ctx context.Context, rq *v1.LoginReques
 }
 
 // ValidateChangePasswordRequest 校验 ChangePasswordRequest 结构体的有效性.
-func (v *Validator) ValidateChangePasswordRequest(ctx context.Context, rq *v1.ChangePasswordRequest) error {
-	if rq.GetUserID() != contextx.UserID(ctx) {
-		return errno.ErrPermissionDenied.WithMessage("The logged-in user `%s` does not match request user `%s`", contextx.UserID(ctx), rq.GetUserID())
-	}
-	return genericvalidation.ValidateAllFields(rq, v.ValidateUserRules())
-}
+// func (v *Validator) ValidateChangePasswordRequest(ctx context.Context, rq *v1.ChangePasswordRequest) error {
+// 	if rq.GetUserID() != contextx.UserID(ctx) {
+// 		return errno.ErrPermissionDenied.WithMessage("The logged-in user `%s` does not match request user `%s`", contextx.UserID(ctx), rq.GetUserID())
+// 	}
+// 	return genericvalidation.ValidateAllFields(rq, v.ValidateUserRules())
+// }
 
 // ValidateCreateUserRequest 校验 CreateUserRequest 结构体的有效性.
 func (v *Validator) ValidateCreateUserRequest(ctx context.Context, rq *v1.CreateUserRequest) error {

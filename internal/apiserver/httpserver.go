@@ -10,9 +10,9 @@ import (
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/pkg/metrics"
 	"github.com/moweilong/art-design-pro-go/internal/pkg/errno"
 	mw "github.com/moweilong/art-design-pro-go/internal/pkg/middleware/gin"
-	"github.com/onexstack/onexstack/pkg/core"
-	genericmw "github.com/onexstack/onexstack/pkg/middleware/gin"
-	"github.com/onexstack/onexstack/pkg/server"
+	"github.com/moweilong/milady/pkg/core"
+	genericmw "github.com/moweilong/milady/pkg/middleware/gin"
+	"github.com/moweilong/milady/pkg/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
@@ -64,9 +64,9 @@ func (c *ServerConfig) InstallRESTAPI(engine *gin.Engine) {
 	// 注册健康检查接口
 	engine.GET("/healthz", hdl.Healthz)
 	// 注册用户登录和令牌刷新接口。这2个接口比较简单，所以没有 API 版本
-	engine.POST("/login", hdl.Login)
+	// engine.POST("/login", hdl.Login)
 	// 注意：认证中间件要在 hdl.RefreshToken 之前加载
-	engine.PUT("/refresh-token", mw.AuthnMiddleware(c.retriever), hdl.RefreshToken)
+	// engine.PUT("/refresh-token", mw.AuthnMiddleware(c.retriever), hdl.RefreshToken)
 
 	// 注册 v1 版本 API 路由分组
 	v1 := engine.Group("/v1")
