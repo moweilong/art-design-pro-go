@@ -8,7 +8,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.7.0
 	github.com/jinzhu/copier v0.4.0 // indirect
-	github.com/onexstack/onexstack v0.3.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.2
 	github.com/spf13/cobra v1.10.1
@@ -34,7 +33,7 @@ require (
 	github.com/go-kratos/kratos/v2 v2.9.1
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/hashicorp/golang-lru v1.0.2
-	github.com/moweilong/milady v0.3.0
+	github.com/moweilong/milady v0.4.0
 	github.com/redis/go-redis/v9 v9.16.0
 	github.com/segmentio/kafka-go v0.4.49
 	golang.org/x/text v0.30.0
@@ -187,6 +186,7 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.14.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
+	go.uber.org/mock v0.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect

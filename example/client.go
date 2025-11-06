@@ -32,8 +32,8 @@ func callHTTP() {
 
 	// 创建用户
 	createUserReply, err := client.CreateUser(context.Background(), &v1.CreateUserRequest{
-		Username: "art",
-		Nickname: "art",
+		Username: "art1",
+		Nickname: "art1",
 		Password: "art(#)888",
 		Email:    "art@example.com",
 		Phone:    "13800000000",
@@ -47,7 +47,7 @@ func callHTTP() {
 		log.Printf("[http] CreateUser %s\n", createUserReply.UserID)
 	}
 
-	reply, err := client.Login(context.Background(), &v1.LoginRequest{Username: "art", Password: "art(#)888"})
+	reply, err := client.Login(context.Background(), &v1.LoginRequest{Username: "art1", Password: "art(#)888"})
 	if err != nil {
 		log.Fatal(err)
 	}

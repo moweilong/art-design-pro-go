@@ -1,9 +1,10 @@
 package gin
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/onexstack/onexstack/pkg/core"
 	"log/slog"
+
+	"github.com/gin-gonic/gin"
+	"github.com/moweilong/milady/pkg/core"
 
 	"github.com/moweilong/art-design-pro-go/internal/pkg/contextx"
 	"github.com/moweilong/art-design-pro-go/internal/pkg/errno"

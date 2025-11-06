@@ -12,16 +12,16 @@ const TableNameSecretM = "secret"
 
 // SecretM 密钥表
 type SecretM struct {
-	ID          int64     `gorm:"column:id;primaryKey;autoIncrement:true;comment:主键 ID" json:"id"`                     // 主键 ID
-	UserID      string    `gorm:"column:userId;not null;comment:用户 ID" json:"userId"`                                  // 用户 ID
-	Name        string    `gorm:"column:name;not null;comment:密钥名称" json:"name"`                                       // 密钥名称
-	SecretID    string    `gorm:"column:secretId;not null;comment:密钥 ID" json:"secretId"`                              // 密钥 ID
-	SecretKey   string    `gorm:"column:secretKey;not null;comment:密钥 Key" json:"secretKey"`                           // 密钥 Key
-	Status      int32     `gorm:"column:status;not null;default:1;comment:密钥状态，0-禁用；1-启用" json:"status"`               // 密钥状态，0-禁用；1-启用
-	Expires     int64     `gorm:"column:expires;not null;comment:0 永不过期" json:"expires"`                               // 0 永不过期
-	Description string    `gorm:"column:description;not null;comment:密钥描述" json:"description"`                         // 密钥描述
-	CreatedAt   time.Time `gorm:"column:createdAt;not null;default:current_timestamp;comment:创建时间" json:"createdAt"`   // 创建时间
-	UpdatedAt   time.Time `gorm:"column:updatedAt;not null;default:current_timestamp;comment:最后修改时间" json:"updatedAt"` // 最后修改时间
+	ID          int64     `gorm:"column:id;type:bigint unsigned;primaryKey;autoIncrement:true;comment:主键 ID" json:"id"`        // 主键 ID
+	UserID      string    `gorm:"column:userId;type:varchar(253);not null;comment:用户 ID" json:"userId"`                        // 用户 ID
+	Name        string    `gorm:"column:name;type:varchar(253);not null;comment:密钥名称" json:"name"`                             // 密钥名称
+	SecretID    string    `gorm:"column:secretId;type:varchar(36);not null;comment:密钥 ID" json:"secretId"`                     // 密钥 ID
+	SecretKey   string    `gorm:"column:secretKey;type:varchar(36);not null;comment:密钥 Key" json:"secretKey"`                  // 密钥 Key
+	Status      int32     `gorm:"column:status;type:tinyint unsigned;not null;default:1;comment:密钥状态，0-禁用；1-启用" json:"status"` // 密钥状态，0-禁用；1-启用
+	Expires     int64     `gorm:"column:expires;type:bigint;not null;comment:0 永不过期" json:"expires"`                           // 0 永不过期
+	Description string    `gorm:"column:description;type:varchar(255);not null;comment:密钥描述" json:"description"`               // 密钥描述
+	CreatedAt   time.Time `gorm:"column:createdAt;type:datetime;not null;comment:创建时间" json:"createdAt"`                       // 创建时间
+	UpdatedAt   time.Time `gorm:"column:updatedAt;type:datetime;not null;comment:最后修改时间" json:"updatedAt"`                     // 最后修改时间
 }
 
 // TableName SecretM's table name

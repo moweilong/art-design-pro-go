@@ -9,8 +9,8 @@ import (
 	gormadapter "github.com/casbin/gorm-adapter/v3"
 	rediswatcher "github.com/casbin/redis-watcher/v2"
 	"github.com/google/wire"
+	"github.com/moweilong/milady/pkg/log"
 	genericoptions "github.com/moweilong/milady/pkg/options"
-	"github.com/onexstack/onexstack/pkg/log"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )

@@ -2,10 +2,9 @@ package model
 
 import (
 	"github.com/google/uuid"
-	"github.com/moweilong/art-design-pro-go/internal/pkg/known"
-	"github.com/onexstack/onexstack/pkg/authn"
-	"github.com/onexstack/onexstack/pkg/rid"
-	"github.com/onexstack/onexstack/pkg/store/registry"
+	"github.com/moweilong/milady/pkg/authn"
+	"github.com/moweilong/milady/pkg/rid"
+	"github.com/moweilong/milady/pkg/store/registry"
 	"gorm.io/gorm"
 )
 
@@ -22,17 +21,13 @@ func (m *SecretM) BeforeCreate(tx *gorm.DB) (err error) {
 	m.SecretKey = uuid.New().String()
 
 	// Set the default status for the secret as normal.
-	m.Status = known.SecretStatusNormal
+	// m.Status = known.SecretStatusNormal
 
 	return nil
 }
 
 // BeforeCreate encrypts the plaintext password before creating a database record.
 func (m *UserM) BeforeCreate(tx *gorm.DB) error {
-	// 设置创建时间为当前时间
-	// TODO 为什么创建时间没有自动填充为当前时间
-	// m.CreatedAt = time.Now()
-
 	// Encrypt the user password.
 	var err error
 	m.Password, err = authn.Encrypt(m.Password)

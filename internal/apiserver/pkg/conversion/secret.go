@@ -1,7 +1,7 @@
 package conversion
 
 import (
-	"github.com/onexstack/onexstack/pkg/core"
+	"github.com/moweilong/milady/pkg/core"
 
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/model"
 	v1 "github.com/moweilong/art-design-pro-go/pkg/api/apiserver/v1"

@@ -3,7 +3,7 @@ package validation
 import (
 	"context"
 
-	genericvalidation "github.com/onexstack/onexstack/pkg/validation"
+	genericvalidation "github.com/moweilong/milady/pkg/validation"
 
 	"github.com/moweilong/art-design-pro-go/internal/pkg/contextx"
 	"github.com/moweilong/art-design-pro-go/internal/pkg/errno"

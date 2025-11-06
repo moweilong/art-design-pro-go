@@ -22,8 +22,8 @@ CREATE TABLE `secret` (
   `status` tinyint(3) unsigned NOT NULL DEFAULT 1 COMMENT '密钥状态，0-禁用；1-启用',
   `expires` bigint(64) NOT NULL DEFAULT 0 COMMENT '0 永不过期',
   `description` varchar(255) NOT NULL DEFAULT '' COMMENT '密钥描述',
-  `createdAt` datetime NOT NULL DEFAULT current_timestamp() COMMENT '创建时间',
-  `updatedAt` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '最后修改时间',
+  `createdAt` datetime NOT NULL COMMENT '创建时间',
+  `updatedAt` datetime NOT NULL COMMENT '最后修改时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_secret_id` (`secretId`),
   KEY `idx_user_id` (`userId`)
@@ -43,8 +43,8 @@ CREATE TABLE `user` (
   `password` varchar(64) NOT NULL DEFAULT '' COMMENT '用户加密后的密码',
   `email` varchar(253) NOT NULL DEFAULT '' COMMENT '用户电子邮箱',
   `phone` varchar(16) NOT NULL DEFAULT '' COMMENT '用户手机号',
-  `createdAt` datetime NOT NULL DEFAULT current_timestamp() COMMENT '创建时间',
-  `updatedAt` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '最后修改时间',
+  `createdAt` datetime NOT NULL COMMENT '创建时间',
+  `updatedAt` datetime NOT NULL COMMENT '最后修改时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_username` (`username`),
   UNIQUE KEY `idx_user_id` (`userId`)

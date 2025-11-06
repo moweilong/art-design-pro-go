@@ -129,11 +129,12 @@ func createGenerator(packagePath string) *gen.Generator {
 	return gen.NewGenerator(gen.Config{
 		Mode:              gen.WithDefaultQuery | gen.WithQueryInterface | gen.WithoutContext,
 		ModelPkgPath:      packagePath,
-		WithUnitTest:      true,
+		WithUnitTest:      true,  // 如果你需要对查询代码进行单元测试, 设置 WithUnitTest 为 true
 		FieldNullable:     true,  // 对于数据库中可空的字段，使用指针类型。
+		FieldCoverable:    false, // 当数据库有默认值时，设置为false使用非指针类型，避免null值问题
 		FieldSignable:     false, // 禁用无符号属性以提高兼容性。
 		FieldWithIndexTag: false, // 不包含 GORM 的索引标签。
-		FieldWithTypeTag:  false, // 不包含 GORM 的类型标签。
+		FieldWithTypeTag:  true,  // 设置为true，自动从数据库获取字段类型和长度信息
 	})
 }
 
@@ -142,13 +143,18 @@ func applyGeneratorOptions(g *gen.Generator) {
 	// 为特定字段自定义 GORM 标签
 	g.WithOpts(
 		gen.FieldGORMTag("createdAt", func(tag field.GormTag) field.GormTag {
-			tag.Set("default", "current_timestamp")
+			// tag.Set("default", "current_timestamp")
+			// tag.Set("autoCreateTime")
 			return tag
 		}),
 		gen.FieldGORMTag("updatedAt", func(tag field.GormTag) field.GormTag {
-			tag.Set("default", "current_timestamp")
+			// tag.Set("default", "current_timestamp")
+			// tag.Set("autoUpdateTime")
 			return tag
 		}),
+		// 为时间字段指定使用非指针类型
+		gen.FieldType("createdAt", "time.Time"),
+		gen.FieldType("updatedAt", "time.Time"),
 	)
 }
 
