@@ -21,13 +21,11 @@ import (
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/pkg/validation"
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/store"
 	"github.com/moweilong/art-design-pro-go/internal/pkg/contextx"
-	mw "github.com/moweilong/art-design-pro-go/internal/pkg/middleware/gin"
+	mw "github.com/moweilong/art-design-pro-go/internal/pkg/middleware"
 )
 
 // Config contains application-related configurations.
 type Config struct {
-	JWTKey       string
-	Expiration   time.Duration
 	TLSOptions   *genericoptions.TLSOptions
 	HTTPOptions  *genericoptions.HTTPOptions
 	MySQLOptions *genericoptions.MySQLOptions
@@ -114,8 +112,8 @@ func ProvideDB(cfg *Config) (*gorm.DB, error) {
 	return cfg.NewDB()
 }
 
-func NewWebServer(serverConfig *ServerConfig) (server.Server, error) {
-	return serverConfig.NewGinServer()
+func NewWebServer(serverConfig *ServerConfig, authn authn.Authenticator) (server.Server, error) {
+	return serverConfig.NewGinServer(authn)
 }
 
 // NewAuthenticator creates a new JWT-based Authenticator using the provided JWT and Redis options.

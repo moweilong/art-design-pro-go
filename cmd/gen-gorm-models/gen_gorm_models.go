@@ -133,7 +133,7 @@ func createGenerator(packagePath string) *gen.Generator {
 		FieldNullable:     true,  // 对于数据库中可空的字段，使用指针类型。
 		FieldCoverable:    false, // 当数据库有默认值时，设置为false使用非指针类型，避免null值问题
 		FieldSignable:     false, // 禁用无符号属性以提高兼容性。
-		FieldWithIndexTag: false, // 不包含 GORM 的索引标签。
+		FieldWithIndexTag: true,  // 包含 GORM 的索引标签。
 		FieldWithTypeTag:  true,  // 设置为true，自动从数据库获取字段类型和长度信息
 	})
 }

@@ -47,7 +47,7 @@ func callHTTP() {
 		log.Printf("[http] CreateUser %s\n", createUserReply.UserID)
 	}
 
-	reply, err := client.Login(context.Background(), &v1.LoginRequest{Username: "art1", Password: "art(#)888"})
+	reply, err := client.Login(context.Background(), &v1.LoginRequest{Username: "art1", Password: "art(#)8881"})
 	if err != nil {
 		log.Fatal(err)
 	}

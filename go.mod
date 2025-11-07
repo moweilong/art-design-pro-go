@@ -44,7 +44,6 @@ require (
 
 require (
 	cel.dev/expr v0.24.0 // indirect
-	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
@@ -103,7 +102,6 @@ require (
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
-	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
 	github.com/hashicorp/consul/api v1.32.4 // indirect

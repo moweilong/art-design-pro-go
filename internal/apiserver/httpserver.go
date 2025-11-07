@@ -9,7 +9,8 @@ import (
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/handler"
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/pkg/metrics"
 	"github.com/moweilong/art-design-pro-go/internal/pkg/errno"
-	mw "github.com/moweilong/art-design-pro-go/internal/pkg/middleware/gin"
+	mw "github.com/moweilong/art-design-pro-go/internal/pkg/middleware"
+	"github.com/moweilong/milady/pkg/authn"
 	"github.com/moweilong/milady/pkg/core"
 	genericmw "github.com/moweilong/milady/pkg/middleware/gin"
 	"github.com/moweilong/milady/pkg/server"
@@ -25,7 +26,7 @@ type ginServer struct {
 // 确保 *ginServer 实现了 server.Server 接口.
 var _ server.Server = (*ginServer)(nil)
 
-func (c *ServerConfig) NewGinServer() (*ginServer, error) {
+func (c *ServerConfig) NewGinServer(authn authn.Authenticator) (*ginServer, error) {
 	// 创建 Gin 引擎
 	engine := gin.New()
 
@@ -44,7 +45,7 @@ func (c *ServerConfig) NewGinServer() (*ginServer, error) {
 	)
 
 	// 注册.R API 路由
-	c.InstallRESTAPI(engine)
+	c.InstallRESTAPI(engine, authn)
 
 	httpsrv := server.NewHTTPServer(c.HTTPOptions, c.TLSOptions, engine)
 
@@ -52,12 +53,12 @@ func (c *ServerConfig) NewGinServer() (*ginServer, error) {
 }
 
 // 注册 API 路由。路由的路径和 HTTP 方法，严格遵循.R 规范.
-func (c *ServerConfig) InstallRESTAPI(engine *gin.Engine) {
+func (c *ServerConfig) InstallRESTAPI(engine *gin.Engine, authn authn.Authenticator) {
 	// 注册业务无关的 API 接口
 	InstallGenericAPI(engine)
 
 	// 认证和授权中间件
-	authMiddlewares := []gin.HandlerFunc{mw.AuthnMiddleware(c.retriever), mw.AuthzMiddleware(c.authz)}
+	authMiddlewares := []gin.HandlerFunc{mw.AuthnMiddleware(authn, c.retriever), mw.AuthzMiddleware(c.authz)}
 
 	// 创建核心业务处理器
 	hdl := handler.NewHandler(c.biz, c.val, authMiddlewares...)

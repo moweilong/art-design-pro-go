@@ -12,7 +12,7 @@ import (
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/pkg/validation"
 	"github.com/moweilong/art-design-pro-go/internal/apiserver/store"
 	"github.com/moweilong/art-design-pro-go/internal/pkg/auth"
-	mw "github.com/moweilong/art-design-pro-go/internal/pkg/middleware/gin"
+	mw "github.com/moweilong/art-design-pro-go/internal/pkg/middleware"
 )
 
 // NewServer sets up and create the web server with all necessary dependencies.

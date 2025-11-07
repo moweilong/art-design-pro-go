@@ -67,8 +67,7 @@ func NewAuthn(setter TemporarySecretSetter) (*authnImpl, error) {
 	return &authnImpl{setter: setter, secrets: l}, nil
 }
 
-// Verify is used to verify a access token. If the verification
-// is successful, userID will be returned.
+// Sign signs a new access token for the given userID.
 func (a *authnImpl) Sign(ctx context.Context, userID string) (authn.IToken, error) {
 	expires := time.Now().Add(known.AccessTokenExpire).Unix()
 
@@ -79,7 +78,7 @@ func (a *authnImpl) Sign(ctx context.Context, userID string) (authn.IToken, erro
 
 	opts := []jwtauthn.Option{
 		jwtauthn.WithSigningMethod(jwt.SigningMethodHS512),
-		jwtauthn.WithIssuer("onex-usercenter"),
+		jwtauthn.WithIssuer("art-design-pro-go"),
 		jwtauthn.WithTokenHeader(map[string]any{"kid": secret.SecretID}),
 		jwtauthn.WithExpired(known.AccessTokenExpire),
 		jwtauthn.WithSigningKey([]byte(secret.SecretKey)),

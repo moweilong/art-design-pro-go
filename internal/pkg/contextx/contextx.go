@@ -2,14 +2,19 @@ package contextx
 
 import (
 	"context"
+
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/moweilong/art-design-pro-go/internal/apiserver/model"
 )
 
 // Define keys for the context.
 type (
+	claimsKey struct{}
 	// usernameKey defines the context key for the username.
 	usernameKey struct{}
 	// userIDKey defines the context key for the user ID.
 	userIDKey struct{}
+	userMKey  struct{}
 	// accessTokenKey defines the context key for the access token.
 	accessTokenKey struct{}
 	// requestIDKey defines the context key for the request ID.
@@ -17,6 +22,11 @@ type (
 	// traceIDKey is the key for storing trace ID in context
 	traceIDKey struct{}
 )
+
+// WithClaims put claims info into context.
+func WithClaims(ctx context.Context, claims *jwt.RegisteredClaims) context.Context {
+	return context.WithValue(ctx, claimsKey{}, claims)
+}
 
 // WithUserID stores the user ID into the context.
 func WithUserID(ctx context.Context, userID string) context.Context {
@@ -71,4 +81,15 @@ func WithTraceID(ctx context.Context, traceID string) context.Context {
 func TraceID(ctx context.Context) string {
 	traceID, _ := ctx.Value(traceIDKey{}).(string)
 	return traceID
+}
+
+// WithUserM put *UserM into context.
+func WithUserM(ctx context.Context, user *model.UserM) context.Context {
+	return context.WithValue(ctx, userMKey{}, user)
+}
+
+// UserM extract *UserM from extract.
+func UserM(ctx context.Context) *model.UserM {
+	user, _ := ctx.Value(userMKey{}).(*model.UserM)
+	return user
 }

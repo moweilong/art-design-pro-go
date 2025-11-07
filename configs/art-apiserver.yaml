@@ -1,7 +1,11 @@
 
 addr: 0.0.0.0:5555 # 服务监听地址
 timeout: 30s # 服务端超时
-jwt-key: Rtg8BPKNEf2mB4mgvKONGPZZQSaJWNLijxR42qRgq0iBb5 # JWT 签发密钥
+jwt:
+  key: art(#)666
+  expired: 2h # JWT 过期时间
+  max-refresh: 2h # JWT 最大刷新时间
+  signing-method: HS512 # JWT 签名方法
 log: # 使用默认值即可，不需要在 manifests/env.local 中配置
     level: debug # 日志级别，优先级从低到高依次为：debug, info, warn, error, dpanic, panic, fatal。
     format: console # 支持的日志输出格式，目前支持 console 和 json 两种。console 其实就是 text 格式。

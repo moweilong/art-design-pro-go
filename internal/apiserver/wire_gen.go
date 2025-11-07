@@ -51,7 +51,7 @@ func NewServer(config *Config, jwtOptions *options.JWTOptions, redisOptions *opt
 		retriever: userRetriever,
 		authz:     authzAuthz,
 	}
-	server, err := NewWebServer(serverConfig)
+	server, err := NewWebServer(serverConfig, authenticator)
 	if err != nil {
 		return nil, err
 	}

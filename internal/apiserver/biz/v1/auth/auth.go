@@ -71,19 +71,11 @@ func (b *authBiz) Login(ctx context.Context, rq *v1.LoginRequest) (*v1.LoginRepl
 		return nil, i18n.FromContext(ctx).E(locales.RecordNotFound)
 	}
 
-	// Compare the obtained user information and the input password.
-	// Because the password `userM.Password` stored in the database is an
-	// encrypted password and cannot be decrypted, the comparison here
-	// actually involves encrypting the `rq.Password` string using the
-	// same method, and then comparing the encrypted string with the
-	// one stored in the database. If they match, the password is verified.
-	if err := authn.Compare(userM.Password, rq.Password); err != nil {
+	if err = authn.Compare(userM.Password, rq.Password); err != nil {
 		log.W(ctx).Errorw(err, "Password does not match")
 		return nil, i18n.FromContext(ctx).E(locales.IncorrectPassword)
 	}
 
-	// If the comparison passes, it means the password is correct.
-	// Call `b.authn.Sign` to generate a refresh token.
 	refreshToken, err := b.authn.Sign(ctx, userM.UserID)
 	if err != nil {
 		log.W(ctx).Errorw(err, "Failed to generate refresh token")
